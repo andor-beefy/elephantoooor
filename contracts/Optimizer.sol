@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.14;
+pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -8,9 +8,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import {IStableYieldCoin} from "./interfaces/IStableYieldCoin.sol";
+import {IPool} from "@aave/core-v3/contracts/interfaces/IPool.sol";
+import {IPoolAddressesProvider} from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 
 contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
-
     uint256 constant ONE_HUNDRED_PERCENT = 10000;
 
     // structs
@@ -19,15 +20,18 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         uint256 amount;
     }
 
-    uint256 private totalSupply;
-    uint256 private collateralBalance;
-
     // state
     IStableYieldCoin public token;
+    IPoolAddressesProvider public aavePoolAddressesProvider;
     uint256 public managementFee;
+    uint256 private collateralBalance;
 
-    function initialize(IStableYieldCoin _token) external initializer {
+    function initialize(IStableYieldCoin _token, IPoolAddressesProvider _aavePoolAddressesProvider)
+        external
+        initializer
+    {
         token = _token;
+        aavePoolAddressesProvider = _aavePoolAddressesProvider;
     }
 
     // events
@@ -37,14 +41,14 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
     // modifiers
 
     // functions
-    
+
     // aave v3
 
     function setManagementFee(uint256 _managementFee) public onlyOwner {
         managementFee = _managementFee;
     }
 
-    function deposit(StableInfo _inputStables, address _bestYieldAddress) external nonReentrant {
+    function deposit(StableInfo calldata _inputStables, address _bestYieldAddress) external nonReentrant {
         // TODO: accounting of user to token and amounts for how much interest should be given based on the amount of time staked
         // for now, we ignore calculating based on time, we just give user the average yield
         // checks - effects - interactions
@@ -54,29 +58,51 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         // based on rates we either swap tokens or not at curve or uniswap v3 (this can be done off chain possibly)
         if (_inputStables.tokenAddress ==  _bestYieldAddress) {
             // deposit tokens into aave for lending
-            _depositToAave(_bestYieldAddress, _inputStables.amount)
+            _depositToAave(_bestYieldAddress, _inputStables.amount);
             // mint StableYieldToken to user of input amount 
-            _handleMint(address msg.sender, uint256 _inputStables.amount)
+            _handleMint(msg.sender, _inputStables.amount);
         } else {
             // swap tokens to deposit_bestYieldAddress and then deposits these tokens into aave for lending
-            curveResultAmount = swapInCurve(_inputStables.tokenAddress, _bestYieldAddress, _inputStables.amount)
+            uint256 curveResultAmount = swapInCurve(_inputStables.tokenAddress, _bestYieldAddress, _inputStables.amount);
             // deposit tokens into aave for lending
-            _depositToAave(_bestYieldAddress, curveResultAmount)
+            _depositToAave(_bestYieldAddress, curveResultAmount);
             // mint StableYieldToken to user equal to amount of _bestYieldAddress tokens we got from curve
-            _handleMint(address msg.sender, uint256 curveResultAmount)
+            _handleMint(msg.sender, curveResultAmount);
 
 
         }
         // mint StableYieldToken to user of amount 
-        _handleMint(address msg.sender, uint256 _inputStables.amount)
+        _handleMint(msg.sender, _inputStables.amount);
+
         // maybe make this function generic so we can plug any protocol (later)
     }
 
-    function redeem() external {
+    /**
+     * @notice User burns their Stable Yield Coin to redeem desired token.
+     * @dev Take as much liquidity from lowest APY pools.
+     */
+    function redeem(
+        StableInfo calldata _desiredStableData,
+        StableInfo[] calldata _withdrawalData
+    ) external {
+        IPool pool = IPool(aavePoolAddressesProvider.getPool());
+        token.burn(msg.sender, _desiredStableData.amount);
+        for (uint8 i = 0; i < _withdrawalData.length; i++) {
+            pool.withdraw(
+                _withdrawalData[i].tokenAddress,
+                _withdrawalData[i].amount,
+                address(this)
+            );
+            // approve uniswap permissions
+            // swap to desired stable in withdrawal data amounts
+        }
+
+        // send desired token to user
+        //
         // check APYs of AAVE pools, check enough liquidity for amount in that pool (if not, withdraw as much as possible from pool) - off-chain prolly
         // offchain: input is token + amount (For now just one token, one amount), output is what to withdraw and swap from aave (by lowest APY)
         // update user info in mapping
-        // burn user's StableYield tokens 
+        // burn user's StableYield tokens
         // withdraw from aave and swap to underlying, if necessary, do swaps on curve/uniswap v3 (uni vs. curve done off-chain)
     }
 
@@ -91,48 +117,45 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
 
     function getRebalanceAmounts() external {}
 
-    function _handleMint(address _account, uint256 amount) internal {
-        totalSupply = totalSupply + amount
-        collateralBalance = collateralBalance + amount
+    function _handleMint(address _account, uint256 _amount) internal {
+        token.mint(_account, _amount);
+        uint256 totalSupply = token.totalSupply();
+        collateralBalance = collateralBalance + _amount;
         assert(totalSupply <= collateralBalance);
-         _mint(_account, _amount);
     }
 
-    function _calculateWithdrawalFee(uint256 _withdrawalAmount) internal view returns (uint256) {
+    function _calculateWithdrawalFee(uint256 _withdrawalAmount)
+        internal
+        view
+        returns (uint256)
+    {
         return (_withdrawalAmount * managementFee) / ONE_HUNDRED_PERCENT;
     }
 
-
-    function _authorizeUpgrade(address) internal override {}
-
-    function getTotalSupply() public returns (unint256) {
-        return totalSupply
+    function getcollateralBalance() public returns (uint256) {
+        return collateralBalance;
     }
 
-    function getcollateralBalance() public returns (unint256) {
-        return collateralBalance
-    }
-
-    function _depositToAave(address _inputAddress, uint256 amount) internal {
+    function _depositToAave(address _inputAddress, uint256 _amount) internal {
 
         // Retrieve LendingPool address
         // this is for Ropsten!
-        LendingPoolAddressesProvider provider = LendingPoolAddressesProvider(address(0x1c8756FD2B28e9426CDBDcC7E3c4d64fa9A54728)); // mainnet address, for other addresses: https://docs.aave.com/developers/developing-on-aave/deployed-contract-instances
-        LendingPool lendingPool = LendingPool(provider.getLendingPool());
+        IPool pool = IPool(aavePoolAddressesProvider.getPool());
 
         // Input variables
-        address daiAddress = address(_inputAddress);
-        uint256 amount = amount * 1e18;
+        address tokenAddress = address(_inputAddress);
         uint16 referral = 0;
 
         // Approve LendingPool contract to move your DAI
-        IERC20(daiAddress).approve(provider.getLendingPoolCore(), amount);
+        IERC20(tokenAddress).approve(address(pool), _amount);
 
         // Deposit 1000 DAI
-        lendingPool.deposit(daiAddress, amount, referral);
+        pool.supply(tokenAddress, _amount, address(this), referral);
     }
 
-    function swapInCurve(address _from, address _to, uint256 amount) internal returns (uint256) {
+    function swapInCurve(address _from, address _to, uint256 _amount) internal returns (uint256) {
 
     }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 }
