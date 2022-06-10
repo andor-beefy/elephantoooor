@@ -19,6 +19,9 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         uint256 amount;
     }
 
+    uint256 private totalSupply;
+    uint256 private collateralBalance;
+
     // state
     IStableYieldCoin public token;
     uint256 public managementFee;
@@ -41,7 +44,7 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         managementFee = _managementFee;
     }
 
-    function deposit() external nonReentrant {
+    function deposit(StableInfo _inputStables, address _bestYieldAddress) external nonReentrant {
         // TODO: accounting of user to token and amounts for how much interest should be given based on the amount of time staked
         // for now, we ignore calculating based on time, we just give user the average yield
         // checks - effects - interactions
@@ -49,8 +52,23 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         // check the best rates via aave v3/v2, etc. (maybe we do this off chain and pass it in)
         // algorithm: highest interest is the stable we will swap to
         // based on rates we either swap tokens or not at curve or uniswap v3 (this can be done off chain possibly)
-        // deposit tokens into aave for lending
+        if (_inputStables.tokenAddress ==  _bestYieldAddress) {
+            // deposit tokens into aave for lending
+            _depositToAave(_bestYieldAddress, _inputStables.amount)
+            // mint StableYieldToken to user of input amount 
+            _handleMint(address msg.sender, uint256 _inputStables.amount)
+        } else {
+            // swap tokens to deposit_bestYieldAddress and then deposits these tokens into aave for lending
+            curveResultAmount = swapInCurve(_inputStables.tokenAddress, _bestYieldAddress, _inputStables.amount)
+            // deposit tokens into aave for lending
+            _depositToAave(_bestYieldAddress, curveResultAmount)
+            // mint StableYieldToken to user equal to amount of _bestYieldAddress tokens we got from curve
+            _handleMint(address msg.sender, uint256 curveResultAmount)
+
+
+        }
         // mint StableYieldToken to user of amount 
+        _handleMint(address msg.sender, uint256 _inputStables.amount)
         // maybe make this function generic so we can plug any protocol (later)
     }
 
@@ -73,9 +91,11 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
 
     function getRebalanceAmounts() external {}
 
-    function _handleMint() internal {
-        // do mint of StableYield token
-        // assert(totalSupply of StableYield <= collateralBalance);
+    function _handleMint(address _account, uint256 amount) internal {
+        totalSupply = totalSupply + amount
+        collateralBalance = collateralBalance + amount
+        assert(totalSupply <= collateralBalance);
+         _mint(_account, _amount);
     }
 
     function _calculateWithdrawalFee(uint256 _withdrawalAmount) internal view returns (uint256) {
@@ -84,4 +104,35 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
 
 
     function _authorizeUpgrade(address) internal override {}
+
+    function getTotalSupply() public returns (unint256) {
+        return totalSupply
+    }
+
+    function getcollateralBalance() public returns (unint256) {
+        return collateralBalance
+    }
+
+    function _depositToAave(address _inputAddress, uint256 amount) internal {
+
+        // Retrieve LendingPool address
+        // this is for Ropsten!
+        LendingPoolAddressesProvider provider = LendingPoolAddressesProvider(address(0x1c8756FD2B28e9426CDBDcC7E3c4d64fa9A54728)); // mainnet address, for other addresses: https://docs.aave.com/developers/developing-on-aave/deployed-contract-instances
+        LendingPool lendingPool = LendingPool(provider.getLendingPool());
+
+        // Input variables
+        address daiAddress = address(_inputAddress);
+        uint256 amount = amount * 1e18;
+        uint16 referral = 0;
+
+        // Approve LendingPool contract to move your DAI
+        IERC20(daiAddress).approve(provider.getLendingPoolCore(), amount);
+
+        // Deposit 1000 DAI
+        lendingPool.deposit(daiAddress, amount, referral);
+    }
+
+    function swapInCurve(address _from, address _to, uint256 amount) internal returns (uint256) {
+
+    }
 }
