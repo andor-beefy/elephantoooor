@@ -4,6 +4,7 @@ require("@nomiclabs/hardhat-etherscan")
 require("dotenv").config()
 require("solidity-coverage")
 require("hardhat-deploy")
+require("hardhat-prettier")
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 /**
@@ -34,14 +35,7 @@ module.exports = {
         },
     },
     solidity: {
-        compilers: [
-            {
-                version: "0.8.8",
-            },
-            {
-                version: "0.6.6",
-            },
-        ],
+        version: "0.8.14",
     },
     etherscan: {
         apiKey: ETHERSCAN_API_KEY,
