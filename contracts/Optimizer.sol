@@ -35,6 +35,7 @@ contract Optimizer is
     uint256 public managementFee;
     uint256 private collateralBalance;
     uint256 private amountOutMinimumModifier;
+    uint256 private decimalPlaces = 10000000000000000;
     mapping(address => LendingData) public userToDataMap;
 
     constructor(
@@ -231,5 +232,28 @@ contract Optimizer is
 
     function getSwapRouterAddress() public view returns (address) {
         return uniswapRouterAddress;
+    }
+
+    // userPartOfSuppply has 16 decimal places, e.g. 0,0008 = 8E+13
+    // avgInterest has 16 decimal places, e.g. 0,05 = 5E+14
+    function getUserInterestAmount(
+        address,
+        uint256 userPartOfSupply,
+        uint256 avgInterest
+    ) internal onlyOwner returns (uint256) {
+        // ((userPartOfSuppply * avgInterest) / decimalPlaces * totalSupply) / decimalPlaces
+    }
+
+    // userPartOfSuppply has 16 decimal places, e.g. 0,0008 = 8E+13
+    function getUserSupplyAmount(address, uint256 userPartOfSuppply)
+        internal
+        onlyOwner
+        returns (uint256)
+    {
+        // (userPartOfSuppply * totalSupply) / decimalPlaces
+    }
+
+    function getUserPartOfSupply(address) internal onlyOwner returns (uint256) {
+        // (user amount * totalSupply) / decimalPlaces;
     }
 }
