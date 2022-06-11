@@ -58,7 +58,8 @@ contract Optimizer is
     }
 
     function deposit(
-        StableInfo calldata _inputStables,
+        address _inputAsset,
+        uint256 _amount,
         address _underlyingAsset
     ) external nonReentrant {
         // @note TODO: accounting of user to token and amounts for how much interest should be given based on the amount of time staked
@@ -66,17 +67,23 @@ contract Optimizer is
         // user takes array of stable coins-amount from user
         // algorithm: highest interest is the stable we will swap to
         // based on rates we either swap tokens or not at curve or uniswap v3 (this can be done off chain possibly)
-        if (_inputStables.tokenAddress == _underlyingAsset) {
+        IERC20(_inputAsset).transferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
+
+        if (_inputAsset == _underlyingAsset) {
             // deposit tokens into aave for lending
-            _supplyToAave(_underlyingAsset, _inputStables.amount);
+            _supplyToAave(_underlyingAsset, _amount);
             // mint StableYieldToken to user of input amount
-            _handleMint(msg.sender, _inputStables.amount);
+            _handleMint(msg.sender, _amount);
         } else {
             // swap tokens to deposit_underlyingAsset and then deposits these tokens into aave for lending
             uint256 outputAmount = swapInUniswapV3(
-                _inputStables.tokenAddress,
+                _inputAsset,
                 _underlyingAsset,
-                _inputStables.amount
+                _amount
             );
             // deposit tokens into aave for lending
             _supplyToAave(_underlyingAsset, outputAmount);
@@ -121,10 +128,7 @@ contract Optimizer is
             );
         }
 
-        IERC20(_desiredToken).transfer(
-            msg.sender,
-            sumOutputAmount
-        );
+        IERC20(_desiredToken).transfer(msg.sender, sumOutputAmount);
     }
 
     function rebalance(address _currentUnderlying, address _newUnderlying)
