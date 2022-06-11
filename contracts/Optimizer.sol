@@ -2,8 +2,6 @@
 pragma solidity 0.8.10;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -14,10 +12,8 @@ import {IPoolAddressesProvider} from "@aave/core-v3/contracts/interfaces/IPoolAd
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 contract Optimizer is
-    Initializable,
     Ownable,
     ReentrancyGuard,
-    UUPSUpgradeable,
     ERC20("Stable Yield Coin", "SYC")
 {
     uint256 constant ONE_HUNDRED_PERCENT = 10000;
@@ -41,12 +37,12 @@ contract Optimizer is
     uint256 private amountOutMinimumModifier;
     mapping(address => LendingData) public userToDataMap;
 
-    function initialize(
+    constructor(
         IPoolAddressesProvider _aavePoolAddressesProvider,
         uint256 _managementFee,
         uint256 _amountOutMinimumModifier,
         address _uniswapRouterAddress
-    ) external initializer {
+    ) {
         aavePoolAddressesProvider = _aavePoolAddressesProvider;
         managementFee = _managementFee;
         amountOutMinimumModifier = _amountOutMinimumModifier;
@@ -135,10 +131,10 @@ contract Optimizer is
         external
         onlyOwner
     {
-        uint256 aTokenBalance = aTokenBalance(_currentUnderlying);
+        uint256 aTokenBal = aTokenBalance(_currentUnderlying);
         uint256 withdrawnAmount = _withdrawFromAave(
             _currentUnderlying,
-            aTokenBalance,
+            aTokenBal,
             address(this)
         );
         _supplyToAave(_newUnderlying, withdrawnAmount);
@@ -232,6 +228,4 @@ contract Optimizer is
     function getSwapRouterAddress() public view returns (address) {
         return uniswapRouterAddress;
     }
-
-    function _authorizeUpgrade(address) internal override onlyOwner {}
 }
