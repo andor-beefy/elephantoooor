@@ -8,9 +8,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import {IStableYieldCoin} from "./interfaces/IStableYieldCoin.sol";
-import {UniswapSwapv3} from "./UniswapSwapv3.sol";
+import {UniswapV3Swap} from "./UniswapV3Swap.sol";
 import {IPool} from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import {IPoolAddressesProvider} from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+import {ISwapRouter} from '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 
 
 contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
@@ -24,18 +25,19 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
 
     // state
     IStableYieldCoin public token;
-    UniswapSwapv3 private uniswapSwap;
+    UniswapV3Swap private uniswapSwap;
     IPoolAddressesProvider public aavePoolAddressesProvider;
     uint256 public managementFee;
     uint256 private collateralBalance;
     uint256 private amountOutMinimumModifier;
-
+    address uniswapRouterAddress;
 
     function initialize(
         IStableYieldCoin _token, 
         IPoolAddressesProvider _aavePoolAddressesProvider, 
         uint256 _managementFee,
-        uint256 _amountOutMinimumModifier
+        uint256 _amountOutMinimumModifier,
+        address _uniswapRouterAddress
         )
         external
         initializer
@@ -44,6 +46,11 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         aavePoolAddressesProvider = _aavePoolAddressesProvider;
         managementFee = _managementFee;
         amountOutMinimumModifier = _amountOutMinimumModifier;
+        uniswapRouterAddress = _uniswapRouterAddress;
+
+        ISwapRouter swapRouter = ISwapRouter(_uniswapRouterAddress);
+
+        uniswapSwap = new UniswapV3Swap(swapRouter); // 0xE592427A0AEce92De3Edee1F18E0157C05861564
     }
 
     // events
@@ -175,5 +182,10 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         return uniswapSwap.swapExactInputSingle(_amount, _from, _to, minimalAmount);
     }
 
+    function getSwapRouterAddress() public view returns (address) {
+        return uniswapRouterAddress;
+    }
+
     function _authorizeUpgrade(address) internal override onlyOwner {}
+
 }
