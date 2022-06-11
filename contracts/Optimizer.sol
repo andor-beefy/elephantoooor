@@ -68,6 +68,8 @@ contract Optimizer is
         // user takes array of stable coins-amount from user
         // algorithm: highest interest is the stable we will swap to
         // based on rates we either swap tokens or not at curve or uniswap v3 (this can be done off chain possibly)
+        IERC20(_inputAsset).approve(address(this), _amount);
+
         IERC20(_inputAsset).transferFrom(
             msg.sender,
             address(this),

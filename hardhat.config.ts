@@ -27,6 +27,8 @@ const config: HardhatUserConfig = {
             url: RINKEBY_RPC_URL,
             accounts: [PRIVATE_KEY],
             chainId: 4,
+            gas: 2100000,
+            gasPrice: 8000000000
         },
     },
     solidity: {
