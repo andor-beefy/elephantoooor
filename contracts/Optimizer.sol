@@ -94,33 +94,38 @@ contract Optimizer is
      * @dev Take as much liquidity from lowest APY pools.
      */
     function redeem(
-        StableInfo calldata _desiredStableData,
+        address _desiredToken,
         StableInfo[] calldata _withdrawalData
     ) external {
+        uint256 userBalance = balanceOf(msg.sender);
         // @note TODO: off-chain algorithm:
         // - check APYs + liquidity in pools from aave contracts of deposited tokens of this contract
-        _burn(msg.sender, _desiredStableData.amount);
+        _burn(msg.sender, userBalance);
+
         uint256 sumOutputAmount;
         for (uint8 i = 0; i < _withdrawalData.length; i++) {
+            (uint256 withdrawable, ) = userWithdrawable(
+                _withdrawalData[i].tokenAddress,
+                msg.sender
+            );
             _withdrawFromAave(
                 _withdrawalData[i].tokenAddress,
-                // TODO: function which calculates how much user should get
-                _withdrawalData[i].amount,
+                withdrawable,
                 address(this)
             );
             IERC20(_withdrawalData[i].tokenAddress).approve(
-                address(0), // @note TODO: router
-                _withdrawalData[i].amount
+                getSwapRouterAddress(),
+                withdrawable
             );
 
             sumOutputAmount += swapInUniswapV3(
                 _withdrawalData[i].tokenAddress,
-                _desiredStableData.tokenAddress,
-                _withdrawalData[i].amount
+                _desiredToken,
+                withdrawable
             );
         }
 
-        IERC20(_desiredStableData.tokenAddress).transfer(
+        IERC20(_desiredToken).transfer(
             msg.sender,
             sumOutputAmount
         );
@@ -130,13 +135,7 @@ contract Optimizer is
         external
         onlyOwner
     {
-        DataTypes.ReserveData memory reserveData = pool().getReserveData(
-            _currentUnderlying
-        );
-
-        uint256 aTokenBalance = IERC20(reserveData.aTokenAddress).balanceOf(
-            address(this)
-        );
+        uint256 aTokenBalance = aTokenBalance(_currentUnderlying);
         uint256 withdrawnAmount = _withdrawFromAave(
             _currentUnderlying,
             aTokenBalance,
@@ -171,6 +170,28 @@ contract Optimizer is
 
     function pool() internal view returns (IPool) {
         return IPool(aavePoolAddressesProvider.getPool());
+    }
+
+    function aTokenBalance(address _underlyingAsset)
+        public
+        view
+        returns (uint256)
+    {
+        DataTypes.ReserveData memory reserveData = pool().getReserveData(
+            _underlyingAsset
+        );
+        return IERC20(reserveData.aTokenAddress).balanceOf(address(this));
+    }
+
+    function userWithdrawable(address _currentUnderlying, address _user)
+        public
+        view
+        returns (uint256 withdrawable, uint256 interest)
+    {
+        uint256 aaveBalance = aTokenBalance(_currentUnderlying);
+        uint256 sycBalance = balanceOf(_user);
+        withdrawable = (sycBalance * aaveBalance) / totalSupply();
+        interest = withdrawable - sycBalance;
     }
 
     function _supplyToAave(address _underlyingAsset, uint256 _amount) internal {

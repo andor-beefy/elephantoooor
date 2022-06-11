@@ -1,20 +1,21 @@
 Arguments: 
-  /usr/local/bin/node /usr/local/bin/yarn add @uniswap/v3-periphery
+  /usr/local/bin/node /Users/0xdavinchee/.yarn/bin/yarn.js add hardhat-ethers
 
 PATH: 
-  /home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:/home/tomas/.local/bin:/home/tomas/.krew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/spark/bin:/opt/spark/sbin
+  /opt/homebrew/opt/llvm/bin:/Users/0xdavinchee/.cabal/bin:/Users/0xdavinchee/.ghcup/bin:/Users/0xdavinchee/.yarn/bin:/Users/0xdavinchee/.config/yarn/global/node_modules/.bin:/Users/0xdavinchee/.nix-profile/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/0xdavinchee/.cargo/bin:/Applications/Visual Studio Code.app/Contents/Resources/app/bin:/Users/0xdavinchee/.foundry/bin
 
 Yarn version: 
-  1.22.19
+  1.22.18
 
 Node version: 
-  16.15.1
+  16.14.0
 
 Platform: 
-  linux x64
+  darwin arm64
 
 Trace: 
-  Error: EIO: i/o error, unlink '/mnt/c/_development/_solidity_development/hardhat-fund-me-example/node_modules/bufferutil/prebuilds/win32-x64/node.napi.node'
+  Error: getaddrinfo ENOTFOUND registry.yarnpkg.com
+      at GetAddrInfoReqWrap.onlookup [as oncomplete] (node:dns:71:26)
 
 npm manifest: 
   {
@@ -24,11 +25,12 @@ npm manifest:
       "@chainlink/contracts": "^0.3.1",
       "@nomiclabs/hardhat-ethers": "^2.0.6",
       "@nomiclabs/hardhat-etherscan": "^3.0.0",
-      "@nomiclabs/hardhat-waffle": "^2.0.6",
+      "@nomiclabs/hardhat-waffle": "^2.0.3",
       "@openzeppelin/contracts": "^4.6.0",
       "@types/chai": "^4.3.1",
       "@types/mocha": "^9.1.1",
       "@types/node": "^17.0.41",
+      "@uniswap/v3-periphery": "^1.4.1",
       "chai": "^4.3.6",
       "dotenv": "^14.2.0",
       "ethereum-waffle": "^3.4.0",
@@ -49,7 +51,8 @@ npm manifest:
       "lint": "solhint 'contracts/*.sol'",
       "lint:fix": "solhint 'contracts/**/*.sol' --fix",
       "format": "prettier --write .",
-      "coverage": "hardhat coverage"
+      "coverage": "hardhat coverage",
+      "build": "hardhat compile"
     }
   }
 
@@ -658,10 +661,10 @@ Lockfile:
       "@nodelib/fs.scandir" "2.1.5"
       fastq "^1.6.0"
   
-  "@nomiclabs/hardhat-ethers@npm:hardhat-deploy-ethers@^0.3.0-beta.13":
-    version "0.3.0-beta.13"
-    resolved "https://registry.yarnpkg.com/hardhat-deploy-ethers/-/hardhat-deploy-ethers-0.3.0-beta.13.tgz#b96086ff768ddf69928984d5eb0a8d78cfca9366"
-    integrity sha512-PdWVcKB9coqWV1L7JTpfXRCI91Cgwsm7KLmBcwZ8f0COSm1xtABHZTyz3fvF6p42cTnz1VM0QnfDvMFlIRkSNw==
+  "@nomiclabs/hardhat-ethers@^2.0.6":
+    version "2.0.6"
+    resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-ethers/-/hardhat-ethers-2.0.6.tgz#1c695263d5b46a375dcda48c248c4fba9dfe2fc2"
+    integrity sha512-q2Cjp20IB48rEn2NPjR1qxsIQBvFVYW9rFRCFq+bC4RUrn1Ljz3g4wM8uSlgIBZYBi2JMXxmOzFqHraczxq4Ng==
   
   "@nomiclabs/hardhat-etherscan@^2.1.7":
     version "2.1.8"
@@ -692,13 +695,18 @@ Lockfile:
       table "^6.8.0"
       undici "^5.4.0"
   
-  "@nomiclabs/hardhat-waffle@^2.0.2":
+  "@nomiclabs/hardhat-waffle@^2.0.3":
     version "2.0.3"
     resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-waffle/-/hardhat-waffle-2.0.3.tgz#9c538a09c5ed89f68f5fd2dc3f78f16ed1d6e0b1"
     integrity sha512-049PHSnI1CZq6+XTbrMbMv5NaL7cednTfPenx02k3cEh8wBMLa6ys++dBETJa6JjfwgA9nBhhHQ173LJv6k2Pg==
     dependencies:
       "@types/sinon-chai" "^3.2.3"
       "@types/web3" "1.0.19"
+  
+  "@openzeppelin/contracts@3.4.2-solc-0.7":
+    version "3.4.2-solc-0.7"
+    resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.4.2-solc-0.7.tgz#38f4dbab672631034076ccdf2f3201fab1726635"
+    integrity sha512-W6QmqgkADuFcTLzHL8vVoNBtkwjvQRpYIAom7KiUNoLKghyx3FgH0GBjt8NRvigV1ZmMOBllvE1By1C+bi8WpA==
   
   "@openzeppelin/contracts@^4.6.0":
     version "4.6.0"
@@ -1079,6 +1087,33 @@ Lockfile:
     version "1.1.2"
     resolved "https://registry.yarnpkg.com/@ungap/promise-all-settled/-/promise-all-settled-1.1.2.tgz#aa58042711d6e3275dd37dc597e5d31e8c290a44"
     integrity sha512-sL/cEvJWAnClXw0wHk85/2L0G6Sj8UB0Ctc1TEMbKSsmpRosqhwj9gWgFRZSrBr2f9tiXISwNhCPmlfqUqyb9Q==
+  
+  "@uniswap/lib@^4.0.1-alpha":
+    version "4.0.1-alpha"
+    resolved "https://registry.yarnpkg.com/@uniswap/lib/-/lib-4.0.1-alpha.tgz#2881008e55f075344675b3bca93f020b028fbd02"
+    integrity sha512-f6UIliwBbRsgVLxIaBANF6w09tYqc6Y/qXdsrbEmXHyFA7ILiKrIwRFXe1yOg8M3cksgVsO9N7yuL2DdCGQKBA==
+  
+  "@uniswap/v2-core@1.0.1":
+    version "1.0.1"
+    resolved "https://registry.yarnpkg.com/@uniswap/v2-core/-/v2-core-1.0.1.tgz#af8f508bf183204779938969e2e54043e147d425"
+    integrity sha512-MtybtkUPSyysqLY2U210NBDeCHX+ltHt3oADGdjqoThZaFRDKwM6k1Nb3F0A3hk5hwuQvytFWhrWHOEq6nVJ8Q==
+  
+  "@uniswap/v3-core@1.0.0":
+    version "1.0.0"
+    resolved "https://registry.yarnpkg.com/@uniswap/v3-core/-/v3-core-1.0.0.tgz#6c24adacc4c25dceee0ba3ca142b35adbd7e359d"
+    integrity sha512-kSC4djMGKMHj7sLMYVnn61k9nu+lHjMIxgg9CDQT+s2QYLoA56GbSK9Oxr+qJXzzygbkrmuY6cwgP6cW2JXPFA==
+  
+  "@uniswap/v3-periphery@^1.4.1":
+    version "1.4.1"
+    resolved "https://registry.yarnpkg.com/@uniswap/v3-periphery/-/v3-periphery-1.4.1.tgz#b90f08b7386163c0abfd7258831caef6339c7862"
+    integrity sha512-Ab0ZCKOQrQMKIcpBTezTsEhWfQjItd0TtkCG8mPhoQu+wC67nPaf4hYUhM6wGHeFUmDiYY5MpEQuokB0ENvoTg==
+    dependencies:
+      "@openzeppelin/contracts" "3.4.2-solc-0.7"
+      "@uniswap/lib" "^4.0.1-alpha"
+      "@uniswap/v2-core" "1.0.1"
+      "@uniswap/v3-core" "1.0.0"
+      base64-sol "1.0.1"
+      hardhat-watcher "^2.1.1"
   
   "@yarnpkg/lockfile@^1.1.0":
     version "1.1.0"
@@ -2034,6 +2069,11 @@ Lockfile:
     resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.5.1.tgz#1b1b440160a5bf7ad40b650f095963481903930a"
     integrity sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==
   
+  base64-sol@1.0.1:
+    version "1.0.1"
+    resolved "https://registry.yarnpkg.com/base64-sol/-/base64-sol-1.0.1.tgz#91317aa341f0bc763811783c5729f1c2574600f6"
+    integrity sha512-ld3cCNMeXt4uJXmLZBHFGMvVpK9KsLVEhPpFRXnvSVAqABKbuNZg/+dsq3NuM+wxFLb/UrVkz7m1ciWmkMfTbg==
+  
   base@^0.11.1:
     version "0.11.2"
     resolved "https://registry.yarnpkg.com/base/-/base-0.11.2.tgz#7bde5ced145b6d551a90db87f83c558b4eb48a8f"
@@ -2449,7 +2489,7 @@ Lockfile:
     optionalDependencies:
       fsevents "~2.1.1"
   
-  chokidar@3.5.3, chokidar@^3.4.0, chokidar@^3.5.2:
+  chokidar@3.5.3, chokidar@^3.4.0, chokidar@^3.5.2, chokidar@^3.5.3:
     version "3.5.3"
     resolved "https://registry.yarnpkg.com/chokidar/-/chokidar-3.5.3.tgz#1cf37c8707b932bd1af1ae22c0432e2acd1903bd"
     integrity sha512-Dr3sfKRP6oTcjf2JmUmFJfeVMvXBdegxB0iVQ5eb2V10uFJUCAS8OByZdVAyVb8xXNz3GjjTgj9kLWsZTqE6kw==
@@ -4577,6 +4617,13 @@ Lockfile:
     dependencies:
       chalk "^4.1.0"
       glob "^7.1.6"
+  
+  hardhat-watcher@^2.1.1:
+    version "2.3.0"
+    resolved "https://registry.yarnpkg.com/hardhat-watcher/-/hardhat-watcher-2.3.0.tgz#57586a7fb79b73365014794f7e3dc0706aa65b7d"
+    integrity sha512-u76a/1pxPyW9DRZ7FZ8HoSQ4AuKOiSDQTR2NyiZlH5f0Ux+qQfahsh9CNusRLhx2s1OWzlkwCVvrdHq5FTGUzw==
+    dependencies:
+      chokidar "^3.5.3"
   
   hardhat@^2.8.3:
     version "2.9.9"
@@ -6901,12 +6948,12 @@ Lockfile:
     resolved "https://registry.yarnpkg.com/prepend-http/-/prepend-http-2.0.0.tgz#e92434bfa5ea8c19f41cdfd401d741a3c819d897"
     integrity sha512-ravE6m9Atw9Z/jjttRUZ+clIXogdghyZAuWJ3qEzjT+jI/dL1ifAqhZeC5VHzQp1MSt1+jxKkFNemj/iO7tVUA==
   
-  prettier-plugin-solidity@^1.0.0-beta.19:
-    version "1.0.0-beta.19"
-    resolved "https://registry.yarnpkg.com/prettier-plugin-solidity/-/prettier-plugin-solidity-1.0.0-beta.19.tgz#7c3607fc4028f5e6a425259ff03e45eedf733df3"
-    integrity sha512-xxRQ5ZiiZyUoMFLE9h7HnUDXI/daf1tnmL1msEdcKmyh7ZGQ4YklkYLC71bfBpYU2WruTb5/SFLUaEb3RApg5g==
+  prettier-plugin-solidity@^1.0.0:
+    version "1.0.0-dev.21"
+    resolved "https://registry.yarnpkg.com/prettier-plugin-solidity/-/prettier-plugin-solidity-1.0.0-dev.21.tgz#dac42f8617c7dff665af3310b8b84020f4a1359c"
+    integrity sha512-3Q8AiHLbKXJ0AnYqw+lrVpLW82syMn/jgk1OniIFelpWFHAST05xIhMs/sYf46VZEJaR56UjSsNlQm9JmZkREg==
     dependencies:
-      "@solidity-parser/parser" "^0.14.0"
+      "@solidity-parser/parser" "^0.14.1"
       emoji-regex "^10.0.0"
       escape-string-regexp "^4.0.0"
       semver "^7.3.5"
