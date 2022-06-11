@@ -8,8 +8,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import {IStableYieldCoin} from "./interfaces/IStableYieldCoin.sol";
+import {UniswapSwapv3} from "./UniswapSwapv3.sol";
 import {IPool} from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import {IPoolAddressesProvider} from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+
 
 contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
     uint256 constant ONE_HUNDRED_PERCENT = 10000;
@@ -22,16 +24,26 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
 
     // state
     IStableYieldCoin public token;
+    UniswapSwapv3 private uniswapSwap;
     IPoolAddressesProvider public aavePoolAddressesProvider;
     uint256 public managementFee;
     uint256 private collateralBalance;
+    uint256 private amountOutMinimumModifier;
 
-    function initialize(IStableYieldCoin _token, IPoolAddressesProvider _aavePoolAddressesProvider)
+
+    function initialize(
+        IStableYieldCoin _token, 
+        IPoolAddressesProvider _aavePoolAddressesProvider, 
+        uint256 _managementFee,
+        uint256 _amountOutMinimumModifier
+        )
         external
         initializer
     {
         token = _token;
         aavePoolAddressesProvider = _aavePoolAddressesProvider;
+        managementFee = _managementFee;
+        amountOutMinimumModifier = _amountOutMinimumModifier;
     }
 
     // events
@@ -63,7 +75,7 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
             _handleMint(msg.sender, _inputStables.amount);
         } else {
             // swap tokens to deposit_bestYieldAddress and then deposits these tokens into aave for lending
-            uint256 curveResultAmount = swapInCurve(_inputStables.tokenAddress, _bestYieldAddress, _inputStables.amount);
+            uint256 curveResultAmount = swapInUniswapV3(_inputStables.tokenAddress, _bestYieldAddress, _inputStables.amount);
             // deposit tokens into aave for lending
             _depositToAave(_bestYieldAddress, curveResultAmount);
             // mint StableYieldToken to user equal to amount of _bestYieldAddress tokens we got from curve
@@ -132,8 +144,13 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         return (_withdrawalAmount * managementFee) / ONE_HUNDRED_PERCENT;
     }
 
-    function getcollateralBalance() public returns (uint256) {
+
+    function getCollateralBalance() public view returns (uint256) {
         return collateralBalance;
+    }
+
+    function getAmountOutMinimumModifier() public view returns (uint256) {
+        return amountOutMinimumModifier;
     }
 
     function _depositToAave(address _inputAddress, uint256 _amount) internal {
@@ -146,15 +163,16 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         address tokenAddress = address(_inputAddress);
         uint16 referral = 0;
 
-        // Approve LendingPool contract to move your DAI
+        // Approve LendingPool contract to move the input tokens
         IERC20(tokenAddress).approve(address(pool), _amount);
 
-        // Deposit 1000 DAI
+        // Deposit the input tokens
         pool.supply(tokenAddress, _amount, address(this), referral);
     }
 
-    function swapInCurve(address _from, address _to, uint256 _amount) internal returns (uint256) {
-
+    function swapInUniswapV3(address _from, address _to, uint256 _amount) internal returns (uint256) {
+        uint minimalAmount = (_amount * 100) / amountOutMinimumModifier;
+        return uniswapSwap.swapExactInputSingle(_amount, _from, _to, minimalAmount);
     }
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
