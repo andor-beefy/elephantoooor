@@ -33,5 +33,8 @@
     "format": "prettier --write .",
     "coverage": "hardhat coverage",
     "build": "hardhat compile"
+  },
+  "dependencies": {
+    "hardhat-ethers": "^1.0.1"
   }
 }
