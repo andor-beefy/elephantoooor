@@ -11,7 +11,7 @@ import {UniswapV3Swap} from "./UniswapV3Swap.sol";
 import {IPool} from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import {DataTypes} from "@aave/core-v3/contracts/protocol/libraries/types/DataTypes.sol";
 import {IPoolAddressesProvider} from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
-import {ISwapRouter} from '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
+import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 contract Optimizer is
     Initializable,
@@ -120,14 +120,28 @@ contract Optimizer is
             );
         }
 
-        IERC20(_desiredStableData.tokenAddress).transfer(msg.sender, sumOutputAmount);
+        IERC20(_desiredStableData.tokenAddress).transfer(
+            msg.sender,
+            sumOutputAmount
+        );
     }
 
-    function rebalance(address _currentUnderlying, address _newUnderlying) external onlyOwner {
-        DataTypes.ReserveData memory reserveData = pool().getReserveData(_currentUnderlying);
+    function rebalance(address _currentUnderlying, address _newUnderlying)
+        external
+        onlyOwner
+    {
+        DataTypes.ReserveData memory reserveData = pool().getReserveData(
+            _currentUnderlying
+        );
 
-        uint256 aTokenBalance = IERC20(reserveData.aTokenAddress).balanceOf(address(this));
-        uint256 withdrawnAmount = _withdrawFromAave(_currentUnderlying, aTokenBalance, address(this));
+        uint256 aTokenBalance = IERC20(reserveData.aTokenAddress).balanceOf(
+            address(this)
+        );
+        uint256 withdrawnAmount = _withdrawFromAave(
+            _currentUnderlying,
+            aTokenBalance,
+            address(this)
+        );
         _supplyToAave(_newUnderlying, withdrawnAmount);
     }
 
@@ -171,12 +185,12 @@ contract Optimizer is
         pool().supply(tokenAddress, _amount, address(this), referral);
     }
 
-    function _withdrawFromAave(address _underlyingAsset, uint256 _amount, address _to) internal returns(uint256 amount) {
-        amount = pool().withdraw(
-            _underlyingAsset,
-            _amount,
-            _to
-        );
+    function _withdrawFromAave(
+        address _underlyingAsset,
+        uint256 _amount,
+        address _to
+    ) internal returns (uint256 amount) {
+        amount = pool().withdraw(_underlyingAsset, _amount, _to);
     }
 
     function swapInUniswapV3(
