@@ -6,14 +6,13 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
-import {IStableYieldCoin} from "./interfaces/IStableYieldCoin.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {UniswapSwapv3} from "./UniswapSwapv3.sol";
 import {IPool} from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import {IPoolAddressesProvider} from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 
 
-contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
+contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable, ERC20("Stable Yield Coin", "SYC") {
     uint256 constant ONE_HUNDRED_PERCENT = 10000;
 
     // structs
@@ -21,18 +20,20 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         address tokenAddress;
         uint256 amount;
     }
+    struct LendingData {
+        uint256 fromIndex;
+        uint256 amountAccruedSince;
+    }
 
     // state
-    IStableYieldCoin public token;
     UniswapSwapv3 private uniswapSwap;
     IPoolAddressesProvider public aavePoolAddressesProvider;
     uint256 public managementFee;
     uint256 private collateralBalance;
     uint256 private amountOutMinimumModifier;
-
+    mapping(address => LendingData) public userToDataMap;
 
     function initialize(
-        IStableYieldCoin _token, 
         IPoolAddressesProvider _aavePoolAddressesProvider, 
         uint256 _managementFee,
         uint256 _amountOutMinimumModifier
@@ -40,7 +41,6 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         external
         initializer
     {
-        token = _token;
         aavePoolAddressesProvider = _aavePoolAddressesProvider;
         managementFee = _managementFee;
         amountOutMinimumModifier = _amountOutMinimumModifier;
@@ -98,7 +98,7 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
         StableInfo[] calldata _withdrawalData
     ) external {
         IPool pool = IPool(aavePoolAddressesProvider.getPool());
-        token.burn(msg.sender, _desiredStableData.amount);
+        _burn(msg.sender, _desiredStableData.amount);
         for (uint8 i = 0; i < _withdrawalData.length; i++) {
             pool.withdraw(
                 _withdrawalData[i].tokenAddress,
@@ -130,10 +130,9 @@ contract Optimizer is Initializable, Ownable, ReentrancyGuard, UUPSUpgradeable {
     function getRebalanceAmounts() external {}
 
     function _handleMint(address _account, uint256 _amount) internal {
-        token.mint(_account, _amount);
-        uint256 totalSupply = token.totalSupply();
+        _mint(_account, _amount);
         collateralBalance = collateralBalance + _amount;
-        assert(totalSupply <= collateralBalance);
+        assert(totalSupply() <= collateralBalance);
     }
 
     function _calculateWithdrawalFee(uint256 _withdrawalAmount)
