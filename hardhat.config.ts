@@ -7,6 +7,7 @@ import "@nomiclabs/hardhat-etherscan"
 import "solidity-coverage"
 import "hardhat-deploy"
 import "hardhat-prettier"
+import '@typechain/hardhat'
 
 dotenv.config()
 

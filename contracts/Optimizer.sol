@@ -9,6 +9,8 @@ import {UniswapV3Swap} from "./UniswapV3Swap.sol";
 import {IPool} from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import {DataTypes} from "@aave/core-v3/contracts/protocol/libraries/types/DataTypes.sol";
 import {IPoolAddressesProvider} from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+import {MintableERC20} from "@aave/core-v3/contracts/mocks/tokens/MintableERC20.sol";
+import {MintableDelegationERC20} from "@aave/core-v3/contracts/mocks/tokens/MintableDelegationERC20.sol";
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 contract Optimizer is
@@ -68,7 +70,6 @@ contract Optimizer is
         // user takes array of stable coins-amount from user
         // algorithm: highest interest is the stable we will swap to
         // based on rates we either swap tokens or not at curve or uniswap v3 (this can be done off chain possibly)
-        IERC20(_inputAsset).approve(address(this), _amount);
 
         IERC20(_inputAsset).transferFrom(
             msg.sender,
@@ -106,7 +107,6 @@ contract Optimizer is
         uint256 userBalance = balanceOf(msg.sender);
         // @note TODO: off-chain algorithm:
         // - check APYs + liquidity in pools from aave contracts of deposited tokens of this contract
-        _burn(msg.sender, userBalance);
 
         uint256 sumOutputAmount;
         for (uint8 i = 0; i < _withdrawalData.length; i++) {
@@ -119,17 +119,21 @@ contract Optimizer is
                 withdrawable,
                 address(this)
             );
-            IERC20(_withdrawalData[i].tokenAddress).approve(
-                getSwapRouterAddress(),
-                withdrawable
-            );
-
-            sumOutputAmount += swapInUniswapV3(
-                _withdrawalData[i].tokenAddress,
-                _desiredToken,
-                withdrawable
-            );
+            if (_desiredToken != _withdrawalData[i].tokenAddress) {
+                IERC20(_withdrawalData[i].tokenAddress).approve(
+                    getSwapRouterAddress(),
+                    withdrawable
+                );
+                sumOutputAmount += swapInUniswapV3(
+                    _withdrawalData[i].tokenAddress,
+                    _desiredToken,
+                    withdrawable
+                );
+            } else {
+                sumOutputAmount += withdrawable;
+            }
         }
+        _burn(msg.sender, userBalance);
 
         IERC20(_desiredToken).transfer(msg.sender, sumOutputAmount);
     }
