@@ -3,7 +3,7 @@ import hre from "hardhat"
 export async function verifyContract() {
     try {
         await hre.run("verify:verify", {
-            address: "0xa0E3832Dec9188460136a3AcD41747F4D15FF3D4",
+            address: "0x8D8E30853935aC0A07ed480067E10AEA53769486",
             constructorArguments: [
                 "0xBA6378f1c1D046e9EB0F538560BA7558546edF3C",
                 "100",

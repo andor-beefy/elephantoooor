@@ -6982,11 +6982,10 @@ prepend-http@^2.0.0:
   integrity sha512-ravE6m9Atw9Z/jjttRUZ+clIXogdghyZAuWJ3qEzjT+jI/dL1ifAqhZeC5VHzQp1MSt1+jxKkFNemj/iO7tVUA==
 
 prettier-plugin-solidity@^1.0.0:
-  version "1.0.0-dev.21"
-  resolved "https://registry.yarnpkg.com/prettier-plugin-solidity/-/prettier-plugin-solidity-1.0.0-dev.21.tgz#dac42f8617c7dff665af3310b8b84020f4a1359c"
-  integrity sha512-3Q8AiHLbKXJ0AnYqw+lrVpLW82syMn/jgk1OniIFelpWFHAST05xIhMs/sYf46VZEJaR56UjSsNlQm9JmZkREg==
+  version "1.0.0-beta.20"
+  resolved "https://registry.yarnpkg.com/prettier-plugin-solidity/-/prettier-plugin-solidity-1.0.0-beta.20.tgz#829b9cdfb0d1f85c522e0e96b3033e302ac4602b"
+  integrity sha512-4+YWDTFhLK0NkLY67oDWAyRcFGJFwa7hlH6SZFGTSHujZulJNZmYgfNDb5evOhvzpYDhd98CpWpWX1xWZs0iuA==
   dependencies:
-    "@solidity-parser/parser" "^0.14.1"
     emoji-regex "^10.0.0"
     escape-string-regexp "^4.0.0"
     semver "^7.3.5"
